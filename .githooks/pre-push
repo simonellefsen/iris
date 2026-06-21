@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# Guardrail: block the push if type-check, tests, or the production build fail —
+# the same checks Vercel CI runs, caught before code leaves the machine.
+#
+# Activated via `git config core.hooksPath .githooks`, set by the package.json
+# `prepare` script (runs on `pnpm install`). Bypass in an emergency with
+# `git push --no-verify`.
+set -e
+
+echo "▶ pre-push: type-check (pnpm check)…"
+pnpm run check
+
+echo "▶ pre-push: tests (pnpm test)…"
+pnpm run test
+
+echo "▶ pre-push: production build (pnpm build)…"
+pnpm run build
+
+echo "✓ pre-push checks passed — pushing."

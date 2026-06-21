@@ -1,0 +1,13 @@
+#!/bin/sh
+#
+# Fast guardrail on every commit: type-check (svelte-check) only, so compile
+# errors are caught early. The full test + production build run on pre-push.
+#
+# Activated via `git config core.hooksPath .githooks` (set by `prepare`).
+# Bypass in an emergency with `git commit --no-verify`.
+set -e
+
+echo "▶ pre-commit: type-check (pnpm check)…"
+pnpm run check
+
+echo "✓ pre-commit type-check passed."

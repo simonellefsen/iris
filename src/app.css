@@ -34,6 +34,7 @@ body {
 	line-height: 1.5;
 	-webkit-font-smoothing: antialiased;
 	min-height: 100vh;
+	overflow-x: hidden;
 	/* iOS safe areas */
 	padding-bottom: env(safe-area-inset-bottom);
 }
@@ -56,6 +57,8 @@ a {
 	border-radius: var(--radius);
 	padding: 16px;
 	margin-bottom: 12px;
+	overflow-wrap: anywhere;
+	min-width: 0;
 }
 
 h1 {
@@ -79,6 +82,17 @@ h3 {
 
 p {
 	margin: 6px 0;
+}
+
+ul,
+ol {
+	margin: 0 0 8px;
+	padding-left: 1.3em;
+}
+
+li {
+	overflow-wrap: anywhere;
+	margin: 3px 0;
 }
 
 .muted {

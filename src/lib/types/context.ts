@@ -25,12 +25,20 @@ export interface WeatherContext {
 	uvIndex: number;
 }
 
+export interface NearbyPlace {
+	name: string;
+	kind: string; // park | landmark | historic | water | nature | building | leisure | place
+}
+
 export interface LocationContext {
 	lat: number;
 	lon: number;
 	accuracyM: number;
-	name?: string; // reverse-geocoded
+	name?: string; // reverse-geocoded place (city/locality)
 	country?: string;
+	street?: string; // road / pedestrian street
+	neighbourhood?: string; // suburb / neighbourhood / quarter
+	nearby?: NearbyPlace[]; // real nearby parks, landmarks, buildings, water
 }
 
 export interface SessionContext {

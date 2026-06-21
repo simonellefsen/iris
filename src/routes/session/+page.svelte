@@ -180,13 +180,25 @@
 				<span class="badge">{session.context.weather.conditions}</span>
 			</div>
 			<p class="muted" style="margin: 4px 0;">
-				{session.context.location.name ?? 'Unknown location'}
-				{session.context.location.country ? `· ${session.context.location.country}` : ''}
+				{[
+					session.context.location.street,
+					session.context.location.neighbourhood,
+					session.context.location.name,
+					session.context.location.country
+				].filter(Boolean).join(', ') || 'Unknown location'}
 			</p>
 			<div class="muted" style="font-size: 0.85rem;">
 				{session.context.weather.tempC}°C · {session.context.weather.cloudCoverPct}% cloud ·
 				{session.context.weather.windKph} km/h wind
 			</div>
+			{#if (session.context.location.nearby ?? []).length}
+				<div style="margin-top: 8px; line-height: 2.2;">
+					<span class="muted" style="font-size: 0.75rem;">Nearby:</span>
+					{#each (session.context.location.nearby ?? []).slice(0, 6) as place (place.name)}
+						<span class="pill" style="font-size: 0.76rem;">{place.name}</span>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	{/if}
 

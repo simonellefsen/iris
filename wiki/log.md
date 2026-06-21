@@ -5,6 +5,22 @@ the top. Use absolute dates.
 
 ---
 
+## 2026-06-21 — Session UX: selectable Nearby, map links, badge fix
+
+- **Badge rework.** Technique tags + difficulty were in a non-wrapping flex `.row`, so flexbox
+  shrank each pill below its content width and labels wrapped vertically ("BE GIN NE R"). Added a
+  wrapping `.chips`/`.chip` system (`white-space: nowrap`, `flex: 0 0 auto`) and difficulty-coloured
+  chips. Also hardened `.pill`/`.badge` with `white-space: nowrap`.
+- **Selectable Nearby.** Nearby places are now buttons; tapping one re-rolls the task centred on
+  that place (`generateTask(rig, { context, focusPlace })` reuses the gathered context so the list
+  stays stable and it's fast). New `GenerateTaskOptions`; prompt gained an optional `focusPlace`
+  directive.
+- **Open in Maps.** `NearbyPlace` now carries `lat/lon` (captured from the Overpass `center`/node
+  coords we already fetched). `Task.destination` is set from the chosen place, or detected from a
+  place named in the objective (`findMentionedPlace`). New `utils/maps.ts` builds an Apple/Google
+  Maps URL (precise pin when coords exist) and `linkifyDestination` makes the place name in the
+  objective a tappable link. Unit-tested in `utils/maps.test.ts`.
+
 ## 2026-06-21 — Project wiki established
 
 Created this `wiki/` (mirroring the structure used in sibling projects): `index`, `architecture`

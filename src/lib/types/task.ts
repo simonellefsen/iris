@@ -32,4 +32,12 @@ export interface Task {
 	difficulty: Difficulty;
 	context: SessionContext;
 	rig: ActiveRig;
+	/** A real place the task sends the user to, for an "open in maps" action. */
+	destination?: TaskDestination;
+}
+
+export interface TaskDestination {
+	name: string;
+	lat?: number;
+	lon?: number;
 }

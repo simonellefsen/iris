@@ -14,7 +14,9 @@
 	import { distanceMeters } from '$lib/context';
 	import { errorMessage } from '$lib/utils/result';
 	import { formatShutter } from '$lib/utils/focal';
+	import { mapsUrl, linkifyDestination } from '$lib/utils/maps';
 	import { uid } from '$lib/utils/id';
+	import type { NearbyPlace } from '$lib/types/context';
 	import type { CoachingSession } from '$lib/types/session';
 	import type { Submission } from '$lib/types/submission';
 	import type { Task } from '$lib/types/task';
@@ -29,6 +31,10 @@
 	);
 	const hasKey = $derived(!!settings.active.apiKey);
 	const hasRig = $derived(!!settings.current.activeRig);
+
+	// Which nearby place the current task is focused on, and whether we're re-rolling for it.
+	let selectedPlaceName = $state<string | null>(null);
+	let rerolling = $state(false);
 
 	function constraintList(task: Task): string[] {
 		const c = task.constraints;
@@ -62,6 +68,7 @@
 			return;
 		}
 		session.reset();
+		selectedPlaceName = null;
 		session.phase = 'gathering';
 		const res = await generateTask(settings.current.activeRig!);
 		if (!res.ok) {
@@ -72,6 +79,24 @@
 		session.task = res.value;
 		session.context = res.value.context;
 		session.phase = 'task';
+	}
+
+	// Re-design the task around a nearby place the user tapped, reusing the gathered context.
+	async function focusOn(place: NearbyPlace) {
+		if (!settings.current.activeRig || !session.context || rerolling) return;
+		selectedPlaceName = place.name;
+		rerolling = true;
+		session.error = null;
+		const res = await generateTask(settings.current.activeRig, {
+			context: session.context,
+			focusPlace: place
+		});
+		rerolling = false;
+		if (!res.ok) {
+			session.error = res.error;
+			return;
+		}
+		session.task = res.value;
 	}
 
 	async function submit(source: 'capture' | 'pick') {
@@ -192,11 +217,20 @@
 				{session.context.weather.windKph} km/h wind
 			</div>
 			{#if (session.context.location.nearby ?? []).length}
-				<div style="margin-top: 8px; line-height: 2.2;">
-					<span class="muted" style="font-size: 0.75rem;">Nearby:</span>
-					{#each (session.context.location.nearby ?? []).slice(0, 6) as place (place.name)}
-						<span class="pill" style="font-size: 0.76rem;">{place.name}</span>
-					{/each}
+				<div style="margin-top: 10px;">
+					<div class="muted" style="font-size: 0.75rem; margin-bottom: 6px;">
+						Tap a place to design the task around it:
+					</div>
+					<div class="chips">
+						{#each (session.context.location.nearby ?? []).slice(0, 8) as place (place.name)}
+							<button
+								class="chip"
+								class:active={selectedPlaceName === place.name}
+								disabled={rerolling || session.busy}
+								onclick={() => focusOn(place)}
+							>{place.name}</button>
+						{/each}
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -207,16 +241,40 @@
 			<span class="spinner"></span>
 			<span>{session.phase === 'submitting' ? 'Preparing your photo…' : 'Critiquing your photo…'}</span>
 		</div>
+	{:else if rerolling}
+		<div class="card row">
+			<span class="spinner"></span>
+			<span>Designing a task around {selectedPlaceName}…</span>
+		</div>
 	{:else}
+		{@const dest = session.task.destination}
+		{@const loc = session.task.context.location}
 		<!-- Task card -->
 		<div class="card">
-			<div class="row" style="margin-bottom: 8px;">
-				<span class="badge badge-warn">{session.task.difficulty}</span>
+			<div class="chips" style="margin-bottom: 10px;">
+				<span class="chip chip-diff {session.task.difficulty}">{session.task.difficulty}</span>
 				{#each session.task.techniqueTags as tag}
-					<span class="pill">{tag}</span>
+					<span class="chip chip-tag">{tag}</span>
 				{/each}
 			</div>
-			<h2 style="margin-bottom: 8px;">{session.task.objective}</h2>
+
+			<h2 style="margin-bottom: 6px;">
+				{#if dest}
+					{@const parts = linkifyDestination(session.task.objective, dest.name)}
+					{#if parts}{parts.before}<a
+							class="dest-link"
+							href={mapsUrl(dest, loc)}
+							target="_blank"
+							rel="noopener">{parts.match}</a>{parts.after}{:else}{session.task.objective}{/if}
+				{:else}
+					{session.task.objective}
+				{/if}
+			</h2>
+			{#if dest}
+				<a class="maps-link" href={mapsUrl(dest, loc)} target="_blank" rel="noopener">
+					🗺️ Open {dest.name} in Maps
+				</a>
+			{/if}
 
 			<h3>Brief</h3>
 			<ul style="margin: 0; padding-left: 18px;">

@@ -5,24 +5,38 @@ import { gatherContext } from '$lib/context';
 import { enforceFeasibility, resolveRig, rigCapabilities } from '$lib/gear/capability';
 import { getBody, getLens } from '$lib/gear/catalog';
 import { settings } from '$lib/stores/settings.svelte';
+import type { NearbyPlace, SessionContext } from '$lib/types/context';
 import type { ActiveRig } from '$lib/types/gear';
-import type { Task } from '$lib/types/task';
+import type { Task, TaskDestination } from '$lib/types/task';
 import { errorMessage, err, ok, type Result } from '$lib/utils/result';
+import { findMentionedPlace } from '$lib/utils/maps';
 import { uid } from '$lib/utils/id';
 import { TASK_SYSTEM, buildTaskUserPrompt } from './prompts/taskSystem';
 import { taskOutputSchema } from './schemas';
+
+export interface GenerateTaskOptions {
+	/** Reuse already-gathered context (e.g. when re-rolling for a chosen place) instead of re-fetching. */
+	context?: SessionContext;
+	/** A nearby place the user explicitly chose — the task is centred on it. */
+	focusPlace?: NearbyPlace;
+}
 
 /**
  * Gather context for here-and-now, then ask the LLM to design a single task that is
  * feasible with the mounted rig. The result is clamped by enforceFeasibility as insurance
  * against the model requesting impossible settings.
  */
-export async function generateTask(rig: ActiveRig): Promise<Result<Task, string>> {
-	let context;
-	try {
-		context = await gatherContext();
-	} catch (e) {
-		return err(`Could not determine your location: ${errorMessage(e)}`);
+export async function generateTask(
+	rig: ActiveRig,
+	opts: GenerateTaskOptions = {}
+): Promise<Result<Task, string>> {
+	let context = opts.context;
+	if (!context) {
+		try {
+			context = await gatherContext();
+		} catch (e) {
+			return err(`Could not determine your location: ${errorMessage(e)}`);
+		}
 	}
 
 	let body;
@@ -40,7 +54,12 @@ export async function generateTask(rig: ActiveRig): Promise<Result<Task, string>
 		{ role: 'system', content: TASK_SYSTEM },
 		{
 			role: 'user',
-			content: buildTaskUserPrompt({ context, cap, skill: settings.current.skillLevel })
+			content: buildTaskUserPrompt({
+				context,
+				cap,
+				skill: settings.current.skillLevel,
+				focusPlace: opts.focusPlace
+			})
 		}
 	];
 	const schema = zodToJsonSchema(taskOutputSchema);
@@ -78,6 +97,12 @@ export async function generateTask(rig: ActiveRig): Promise<Result<Task, string>
 		return err(`Task generation failed: ${errorMessage(e)}`);
 	}
 
+	// Prefer the explicitly chosen place; otherwise detect one the model named in the objective.
+	const destPlace = opts.focusPlace ?? findMentionedPlace(output.objective, context.location.nearby);
+	const destination: TaskDestination | undefined = destPlace
+		? { name: destPlace.name, lat: destPlace.lat, lon: destPlace.lon }
+		: undefined;
+
 	const task: Task = {
 		id: uid('task'),
 		createdAt: Date.now(),
@@ -89,7 +114,8 @@ export async function generateTask(rig: ActiveRig): Promise<Result<Task, string>
 		coachingHints: output.coachingHints,
 		difficulty: output.difficulty,
 		context,
-		rig
+		rig,
+		destination
 	};
 
 	return ok(enforceFeasibility(task, cap));

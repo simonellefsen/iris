@@ -1,5 +1,5 @@
 import type { RigCapabilities } from '$lib/gear/capability';
-import type { SessionContext } from '$lib/types/context';
+import type { NearbyPlace, SessionContext } from '$lib/types/context';
 import type { SkillLevel } from '$lib/types/settings';
 
 export const TASK_SYSTEM = `You are Iris, an expert photography coach. You design a single, concrete shooting task that the user can do RIGHT NOW, at their current location, in the current light and weather, with the specific camera and lens they have mounted.
@@ -16,8 +16,9 @@ export function buildTaskUserPrompt(args: {
 	context: SessionContext;
 	cap: RigCapabilities;
 	skill: SkillLevel;
+	focusPlace?: NearbyPlace;
 }): string {
-	const { context, cap, skill } = args;
+	const { context, cap, skill, focusPlace } = args;
 	const loc = context.location;
 	const rig = {
 		body: `${cap.body.make} ${cap.body.model} (${cap.body.sensor}, ${cap.body.hasIBIS ? 'IBIS' : 'no IBIS'}, crop ${cap.cropFactor})`,
@@ -44,7 +45,10 @@ export function buildTaskUserPrompt(args: {
 		weather: context.weather,
 		rig
 	};
-	return `Design ONE photography task for right now, here, with this gear. Use the real nearby features to make it specific to this exact spot.\n\n${JSON.stringify(payload, null, 2)}`;
+	const focus = focusPlace
+		? `The user has CHOSEN to photograph "${focusPlace.name}" (${focusPlace.kind}). Centre the entire task on this specific place: name it in the objective and make the brief about photographing it.\n\n`
+		: '';
+	return `${focus}Design ONE photography task for right now, here, with this gear. Use the real nearby features to make it specific to this exact spot.\n\n${JSON.stringify(payload, null, 2)}`;
 }
 
 function round4(n: number): number {

@@ -52,13 +52,23 @@ async function queryOverpass(
 		});
 		clearTimeout(timer);
 		if (!res.ok) return null;
-		const data = (await res.json()) as { elements?: { tags?: Record<string, string> }[] };
+		const data = (await res.json()) as {
+			elements?: {
+				tags?: Record<string, string>;
+				lat?: number;
+				lon?: number;
+				center?: { lat: number; lon: number };
+			}[];
+		};
 		if (!data || !Array.isArray(data.elements)) return null;
 		const out: NearbyPlace[] = [];
 		for (const el of data.elements) {
 			const tags = el.tags ?? {};
 			if (!tags.name) continue;
-			out.push({ name: tags.name, kind: classifyPlace(tags) });
+			// Nodes carry lat/lon directly; ways carry a computed `center` (we ask for `out center`).
+			const lat = el.lat ?? el.center?.lat;
+			const lon = el.lon ?? el.center?.lon;
+			out.push({ name: tags.name, kind: classifyPlace(tags), lat, lon });
 		}
 		return out;
 	} catch {

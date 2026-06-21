@@ -28,6 +28,8 @@ export interface WeatherContext {
 export interface NearbyPlace {
 	name: string;
 	kind: string; // park | landmark | historic | water | nature | building | leisure | place
+	lat?: number; // from OSM (node coords or way center) — used to open a precise map pin
+	lon?: number;
 }
 
 export interface LocationContext {

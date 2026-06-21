@@ -1,0 +1,76 @@
+{
+	"bodies": [
+		{
+			"id": "body_canon_eos_r8",
+			"make": "Canon",
+			"model": "EOS R8",
+			"mount": "rf",
+			"sensor": "full-frame",
+			"sensorSizeMm": { "w": 36, "h": 24 },
+			"cropFactor": 1.0,
+			"megapixels": 24.2,
+			"hasIBIS": false,
+			"maxShutter": "1/16000",
+			"minIso": 100,
+			"maxIso": 51200,
+			"isPhone": false,
+			"source": "catalog"
+		},
+		{
+			"id": "body_iphone_15_pro",
+			"make": "Apple",
+			"model": "iPhone 15 Pro",
+			"mount": "phone-fixed",
+			"sensor": "phone",
+			"sensorSizeMm": { "w": 9.8, "h": 7.3 },
+			"cropFactor": 1.0,
+			"megapixels": 12,
+			"hasIBIS": true,
+			"maxShutter": "1/10000",
+			"minIso": 50,
+			"maxIso": 6400,
+			"isPhone": true,
+			"source": "catalog"
+		}
+	],
+	"lenses": [
+		{
+			"id": "lens_canon_rf_50_1.8",
+			"make": "Canon",
+			"model": "RF 50mm F1.8 STM",
+			"mount": "rf",
+			"isPrime": true,
+			"focalLengthMm": { "min": 50, "max": 50 },
+			"maxAperture": [{ "focalLength": 50, "maxAperture": 1.8 }],
+			"hasOIS": false,
+			"filterThreadMm": 43,
+			"source": "catalog"
+		},
+		{
+			"id": "lens_canon_rf_24_50",
+			"make": "Canon",
+			"model": "RF 24-50mm F4.5-6.3 IS STM",
+			"mount": "rf",
+			"isPrime": false,
+			"focalLengthMm": { "min": 24, "max": 50 },
+			"maxAperture": [
+				{ "focalLength": 24, "maxAperture": 4.5 },
+				{ "focalLength": 50, "maxAperture": 6.3 }
+			],
+			"hasOIS": true,
+			"filterThreadMm": 58,
+			"source": "catalog"
+		},
+		{
+			"id": "lens_iphone_15_pro_main",
+			"make": "Apple",
+			"model": "iPhone 15 Pro main (35mm-equiv)",
+			"mount": "phone-fixed",
+			"isPrime": true,
+			"focalLengthMm": { "min": 24, "max": 24 },
+			"maxAperture": [{ "focalLength": 24, "maxAperture": 1.78 }],
+			"hasOIS": true,
+			"source": "catalog"
+		}
+	]
+}

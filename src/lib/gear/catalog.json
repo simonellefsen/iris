@@ -19,7 +19,7 @@
 		{
 			"id": "body_iphone_15_pro",
 			"make": "Apple",
-			"model": "iPhone 15 Pro",
+			"model": "iPhone",
 			"mount": "phone-fixed",
 			"sensor": "phone",
 			"sensorSizeMm": { "w": 9.8, "h": 7.3 },
@@ -64,7 +64,7 @@
 		{
 			"id": "lens_iphone_15_pro_main",
 			"make": "Apple",
-			"model": "iPhone 15 Pro main (35mm-equiv)",
+			"model": "iPhone main (35mm-equiv)",
 			"mount": "phone-fixed",
 			"isPrime": true,
 			"focalLengthMm": { "min": 24, "max": 24 },

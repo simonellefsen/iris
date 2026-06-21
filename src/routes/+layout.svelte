@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { settings } from '$lib/stores/settings.svelte';
-	import { seedCatalogIfEmpty } from '$lib/gear/catalog';
+	import { migrateCatalog, seedCatalogIfEmpty } from '$lib/gear/catalog';
 
 	let { children } = $props();
 
@@ -11,8 +11,9 @@
 		// Seed the curated catalog and hydrate settings on first load.
 		try {
 			await seedCatalogIfEmpty();
+			await migrateCatalog();
 		} catch (e) {
-			console.warn('Catalog seed failed', e);
+			console.warn('Catalog seed/migrate failed', e);
 		}
 		await settings.load();
 	});

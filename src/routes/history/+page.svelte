@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { db } from '$lib/db/schema';
 	import { useLiveQuery } from '$lib/db/live.svelte';
+	import { settings } from '$lib/stores/settings.svelte';
+	import { difficultyLabel, localeMeta, t } from '$lib/i18n';
 	import type { Evaluation } from '$lib/types/evaluation';
 	import type { Submission } from '$lib/types/submission';
 	import type { Task } from '$lib/types/task';
@@ -33,7 +35,8 @@
 		return score >= 75 ? 'var(--good)' : score >= 50 ? 'var(--warn)' : 'var(--bad)';
 	}
 	function formatDate(ts: number): string {
-		return new Date(ts).toLocaleString(undefined, {
+		// Locale-aware formatting (e.g. da-DK vs en-US date/time order).
+		return new Date(ts).toLocaleString(localeMeta(settings.current.locale).bcp47, {
 			month: 'short',
 			day: 'numeric',
 			hour: 'numeric',
@@ -42,13 +45,13 @@
 	}
 </script>
 
-<h1 style="margin-bottom: 12px;">📜 History</h1>
+<h1 style="margin-bottom: 12px;">{t('history.title')}</h1>
 
 {#if rows.loading}
-	<p class="muted">Loading…</p>
+	<p class="muted">{t('common.loading')}</p>
 {:else if (rows.value ?? []).length === 0}
 	<div class="card">
-		<p class="muted">No sessions yet. <a href="/session">Start one</a> to build your history.</p>
+		<p class="muted">{t('history.emptyStart')}<a href="/session">{t('history.startOne')}</a>{t('history.emptyEnd')}</p>
 	</div>
 {:else}
 	{#each rows.value ?? [] as row (row.session.id)}
@@ -66,7 +69,7 @@
 			{/if}
 			<div style="flex: 1; min-width: 0;">
 				<div style="font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-					{row.task?.objective ?? 'Session'}
+					{row.task?.objective ?? t('history.session')}
 				</div>
 				<div class="muted" style="font-size: 0.8rem;">{formatDate(row.session.startedAt)}</div>
 				{#if row.evaluation}
@@ -77,10 +80,10 @@
 						>
 							{row.evaluation.overallScore}/100
 						</span>
-						{#if row.task}<span class="muted" style="font-size: 0.78rem;">{row.task.difficulty}</span>{/if}
+						{#if row.task}<span class="muted" style="font-size: 0.78rem;">{difficultyLabel(row.task.difficulty)}</span>{/if}
 					</div>
 				{:else}
-					<span class="badge badge-warn">Not evaluated</span>
+					<span class="badge badge-warn">{t('history.notEvaluated')}</span>
 				{/if}
 			</div>
 		</a>

@@ -6,6 +6,7 @@
 	import { useLiveQuery } from '$lib/db/live.svelte';
 	import { formatAperture } from '$lib/utils/aperture';
 	import { adapterName, compatibleMounts, detectMount, parseLensSpecs } from '$lib/utils/lensSpec';
+	import { t } from '$lib/i18n';
 	import { uid } from '$lib/utils/id';
 	import type { CameraBody, GearSource, Lens } from '$lib/types/gear';
 
@@ -36,8 +37,8 @@
 	}
 
 	function sourceTag(src: GearSource): string | null {
-		if (src === 'user') return 'yours';
-		if (src === 'llm-augmented') return 'AI-filled';
+		if (src === 'user') return t('gear.sourceYours');
+		if (src === 'llm-augmented') return t('gear.sourceAi');
 		return null;
 	}
 
@@ -78,7 +79,7 @@
 
 	async function addLens() {
 		if (!form.make.trim() || !form.model.trim()) {
-			addError = 'Enter a make and model.';
+			addError = t('gear.errorNeedMakeModel');
 			return;
 		}
 		const flMin = Math.min(form.flMin, form.flMax);
@@ -106,7 +107,7 @@
 				await settings.save({ ...settings.current, activeRig: { ...activeRig, lensId: lens.id } });
 			}
 		} catch (e) {
-			addError = `Could not save lens: ${e instanceof Error ? e.message : String(e)}`;
+			addError = t('gear.errorSaveLens', { msg: e instanceof Error ? e.message : String(e) });
 			return;
 		}
 		resetForm();
@@ -124,11 +125,11 @@
 
 	async function fillWithAI() {
 		if (!form.make.trim() || !form.model.trim()) {
-			addError = 'Enter a make and model first.';
+			addError = t('gear.errorNeedMakeModelAi');
 			return;
 		}
 		if (!settings.active.apiKey) {
-			addError = 'Add an API key in Setup to use AI lookup.';
+			addError = t('gear.errorNeedKey');
 			return;
 		}
 		aiBusy = true;
@@ -136,7 +137,7 @@
 		const res = await augmentLens(form.make.trim(), form.model.trim());
 		aiBusy = false;
 		if (!res.ok) {
-			addError = `AI lookup failed: ${res.error}`;
+			addError = t('gear.errorAiFailed', { msg: res.error });
 			return;
 		}
 		const l = res.value;
@@ -156,11 +157,11 @@
 	}
 </script>
 
-<h1 style="margin-bottom: 12px;">🎚️ Gear</h1>
+<h1 style="margin-bottom: 12px;">{t('gear.title')}</h1>
 
-<h3>Camera body</h3>
+<h3>{t('gear.cameraBody')}</h3>
 {#if bodies.loading}
-	<p class="muted">Loading…</p>
+	<p class="muted">{t('common.loading')}</p>
 {:else}
 	{#each bodies.value ?? [] as body (body.id)}
 		<button
@@ -174,7 +175,7 @@
 			<div>
 				<div><strong>{body.make} {body.model}</strong></div>
 				<div class="muted" style="font-size: 0.82rem;">
-					{body.sensor} · {body.megapixels}MP · {body.isPhone ? 'Phone' : body.mount.toUpperCase()} mount
+					{body.sensor} · {body.megapixels}MP · {body.isPhone ? t('gear.phoneWord') : `${body.mount.toUpperCase()} ${t('gear.mountWord')}`}
 				</div>
 			</div>
 		</button>
@@ -183,8 +184,8 @@
 
 {#if activeBody}
 	<h3>
-		Lenses · {activeBody.mount.toUpperCase()} mount
-		{#if compatibleLenses.length === 0}<span class="muted">(none yet)</span>{/if}
+		{t('gear.lensesMount', { mount: activeBody.mount.toUpperCase() })}
+		{#if compatibleLenses.length === 0}<span class="muted">{t('gear.noneYet')}</span>{/if}
 	</h3>
 
 	{#each compatibleLenses as lens (lens.id)}
@@ -201,45 +202,44 @@
 					<div>
 						<strong>{lens.make} {lens.model}</strong>
 						{#if sourceTag(lens.source)}<span class="badge" style="margin-left: 6px;">{sourceTag(lens.source)}</span>{/if}
-						{#if adapterName(activeBody.mount, lens.mount)}<span class="badge badge-warn" style="margin-left: 6px;">adapter</span>{/if}
+						{#if adapterName(activeBody.mount, lens.mount)}<span class="badge badge-warn" style="margin-left: 6px;">{t('gear.adapter')}</span>{/if}
 					</div>
 					<div class="muted" style="font-size: 0.82rem;">{lensSummary(lens)}</div>
 				</div>
 			</button>
-			<button class="btn btn-ghost" title="Remove lens" onclick={() => removeLens(lens)}>🗑</button>
+			<button class="btn btn-ghost" title={t('gear.removeLens')} onclick={() => removeLens(lens)}>🗑</button>
 		</div>
 	{/each}
 
 	{#if showAdd}
 		<div class="card">
-			<h3>Add a lens</h3>
-			<label for="lmake">Make</label>
-			<input id="lmake" placeholder="Canon" bind:value={form.make} />
-			<label for="lmodel">Model</label>
+			<h3>{t('gear.addLens')}</h3>
+			<label for="lmake">{t('gear.make')}</label>
+			<input id="lmake" placeholder={t('gear.makePlaceholder')} bind:value={form.make} />
+			<label for="lmodel">{t('gear.model')}</label>
 			<input
 				id="lmodel"
-				placeholder="EF 70-200mm f/2.8L IS"
+				placeholder={t('gear.modelPlaceholder')}
 				bind:value={form.model}
 				oninput={deriveFromModel}
 			/>
 			<p class="muted" style="font-size: 0.76rem; margin: 4px 0 0;">
-				Focal length &amp; aperture are derived from the model name. EF/EF-S lenses mount via an
-				EF-EOS R adapter on this body.
+				{t('gear.deriveNote')}
 			</p>
 
 			<label class="row" style="margin-top: 10px; align-items: center;">
 				<input type="checkbox" bind:checked={form.isPrime} style="width: auto;" />
-				Prime lens (uncheck for zoom)
+				{t('gear.primeLabel')}
 			</label>
 
 			<div class="row" style="gap: 8px;">
 				<div style="flex: 1;">
-					<label for="flmin">Focal min (mm)</label>
+					<label for="flmin">{t('gear.focalMin')}</label>
 					<input id="flmin" type="number" bind:value={form.flMin} />
 				</div>
 				{#if !form.isPrime}
 					<div style="flex: 1;">
-						<label for="flmax">Focal max (mm)</label>
+						<label for="flmax">{t('gear.focalMax')}</label>
 						<input id="flmax" type="number" bind:value={form.flMax} />
 					</div>
 				{/if}
@@ -247,12 +247,12 @@
 
 			<div class="row" style="gap: 8px;">
 				<div style="flex: 1;">
-					<label for="lap">Max aperture (f/)</label>
+					<label for="lap">{t('gear.maxAperture')}</label>
 					<input id="lap" type="number" step="0.1" bind:value={form.aperture} />
 				</div>
 				<label class="row" style="margin-top: 22px; align-items: center; flex: 1;">
 					<input type="checkbox" bind:checked={form.hasOIS} style="width: auto;" />
-					Stabilized (OIS)
+					{t('gear.stabilized')}
 				</label>
 			</div>
 
@@ -262,22 +262,22 @@
 
 			<div class="row" style="margin-top: 12px;">
 				<button class="btn btn-ghost" onclick={fillWithAI} disabled={aiBusy}>
-					{aiBusy ? 'Looking up…' : '✨ Fill specs with AI'}
+					{aiBusy ? t('gear.lookingUp') : t('gear.fillWithAI')}
 				</button>
 				<div class="spacer"></div>
-				<button class="btn btn-ghost" onclick={() => (showAdd = false)}>Cancel</button>
-				<button class="btn btn-primary" onclick={addLens}>Add lens</button>
+				<button class="btn btn-ghost" onclick={() => (showAdd = false)}>{t('common.cancel')}</button>
+				<button class="btn btn-primary" onclick={addLens}>{t('gear.addLensBtn')}</button>
 			</div>
 			<p class="muted" style="font-size: 0.78rem; margin-top: 8px;">
-				AI lookup uses your active LLM provider. You can also type the specs yourself and skip it.
+				{t('gear.aiNote')}
 			</p>
 		</div>
 	{:else}
-		<button class="btn btn-block btn-ghost" onclick={openAdd}>＋ Add lens</button>
+		<button class="btn btn-block btn-ghost" onclick={openAdd}>{t('gear.addLensShort')}</button>
 	{/if}
 
 	<div class="card" style="margin-top: 12px;">
-		<h3>Selected rig</h3>
+		<h3>{t('gear.selectedRig')}</h3>
 		<p>
 			<strong>{activeBody.make} {activeBody.model}</strong><br />
 			{#if activeRig?.lensId}
@@ -287,14 +287,14 @@
 					{/if}
 				{/each}
 			{:else}
-				<span class="muted">No lens selected</span>
+				<span class="muted">{t('gear.noLens')}</span>
 			{/if}
 		</p>
 		{#if activeAdapter}
 			<div class="note" style="margin-bottom: 10px;">
-				This {activeLensObj?.mount.toUpperCase()} lens mounts via an {activeAdapter}.
+				{t('gear.adapterNote', { mount: (activeLensObj?.mount ?? '').toUpperCase(), adapter: activeAdapter ?? '' })}
 			</div>
 		{/if}
-		<a class="btn btn-primary btn-block" href="/session">Shoot with this rig →</a>
+		<a class="btn btn-primary btn-block" href="/session">{t('gear.shootWithRig')}</a>
 	</div>
 {/if}

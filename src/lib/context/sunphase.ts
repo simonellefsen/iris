@@ -1,15 +1,7 @@
 import * as SunCalc from 'suncalc';
 import type { LightContext, LightPhase } from '$lib/types/context';
-
-const PHASE_LABEL: Record<LightPhase, string> = {
-	day: 'Daylight',
-	'golden-hour': 'Golden hour',
-	'blue-hour': 'Blue hour',
-	'civil-twilight': 'Civil twilight',
-	'nautical-twilight': 'Nautical twilight',
-	'astronomical-twilight': 'Astronomical twilight',
-	night: 'Night'
-};
+import { lightLabel, lightPhaseLabel } from '$lib/i18n/messages';
+import type { UiKey } from '$lib/i18n/locales';
 
 /**
  * Classify sun elevation (degrees) into a photography-relevant phase.
@@ -44,7 +36,7 @@ function minutesToNextPhase(date: Date, lat: number, lon: number, current: Light
 	return 0;
 }
 
-export function getLight(date: Date, lat: number, lon: number): LightContext {
+export function getLight(date: Date, lat: number, lon: number, ui: UiKey = 'en'): LightContext {
 	const el = elevationAt(date, lat, lon);
 	const phase = phaseFromElevation(el);
 	const minutesUntilChange = minutesToNextPhase(date, lat, lon, phase);
@@ -54,11 +46,8 @@ export function getLight(date: Date, lat: number, lon: number): LightContext {
 					elevationAt(new Date(date.getTime() + minutesUntilChange * 60_000), lat, lon)
 				)
 			: phase;
-	const verb = isBetterLight(next, phase) ? 'starts' : 'ends';
-	const label =
-		minutesUntilChange > 0
-			? `${PHASE_LABEL[phase]} — ${verb} in ${fmt(minutesUntilChange)}`
-			: PHASE_LABEL[phase];
+	const verb: 'starts' | 'ends' = isBetterLight(next, phase) ? 'starts' : 'ends';
+	const label = lightLabel(phase, minutesUntilChange, verb, ui);
 	return { phase, sunElevationDeg: Math.round(el * 10) / 10, minutesUntilChange, label };
 }
 
@@ -75,13 +64,6 @@ function isBetterLight(a: LightPhase, b: LightPhase): boolean {
 	return rank.indexOf(a) > rank.indexOf(b);
 }
 
-function fmt(min: number): string {
-	if (min < 60) return `${min} min`;
-	const h = Math.floor(min / 60);
-	const m = min % 60;
-	return m ? `${h}h ${m}m` : `${h}h`;
-}
-
-export function phaseLabel(phase: LightPhase): string {
-	return PHASE_LABEL[phase];
+export function phaseLabel(phase: LightPhase, ui: UiKey = 'en'): string {
+	return lightPhaseLabel(phase, ui);
 }

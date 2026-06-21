@@ -5,6 +5,28 @@ the top. Use absolute dates.
 
 ---
 
+## 2026-06-21 — Multilingual UI + LLM output (English / Danish)
+
+The app now speaks the user's language — both the chrome and the LLM content. See the
+[decision](decisions/2026-06-21-multilingual-ui-and-tasks.md).
+
+- **i18n layer** (`src/lib/i18n/`): locales `en-US`/`en-GB`/`da` (`en-US` + `en-GB` share the `en`
+  dictionary; differ in Intl formatting + the LLM spelling hint). `messages.ts` is a flat dotted-key
+  dictionary where `en` is the source of truth and `da` is `Record<MessageKey, string>` (a missing
+  key is a compile error). A reactive `t(key, params)` reads `settings.current.locale`.
+- **Settings**: new `Settings.locale` + a language picker in Setup; **first run** auto-detects from
+  `navigator.languages` (`detectBrowserLocale`) and persists it. Existing users keep their choice.
+- **LLM output language**: `taskSystemPrompt(lang)` / `evalSystemPrompt(lang)` instruct the model to
+  write all free text in the locale's language (mode-dial letters, f-numbers, brand names stay
+  untranslated; eval dimension names stay fixed English as scoring keys).
+- **Context strings localized at gather time**: `gatherContext(ui)` threads a `UiKey` to
+  `getWeather`/`getLight`, so weather conditions + light labels render in the session language.
+- **Enums localized at render** (`difficultyLabel`/`motionLabel`); the stored enum is unchanged
+  (feasibility guard + CSS still key off it). History dates are now locale-formatted.
+- **"Don't change existing sessions" is automatic**: tasks/evals/context are generated once and
+  persisted; a locale change only affects *new* generations + live chrome.
+- Tests: `i18n/i18n.test.ts` (18 cases). `pnpm check` 0 errors, `pnpm test` 65 passing, `pnpm build` ✔.
+
 ## 2026-06-21 — Eval crash fix + session persistence, camera guidance, phone self-heal
 
 Field-test feedback round.

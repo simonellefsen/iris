@@ -2,9 +2,16 @@ import type { RigCapabilities } from '$lib/gear/capability';
 import type { NearbyPlace, SessionContext } from '$lib/types/context';
 import type { SkillLevel } from '$lib/types/settings';
 
-export const TASK_SYSTEM = `You are Iris, an expert photography coach. You design a single, concrete shooting task that the user can do RIGHT NOW, at their current location, in the current light and weather, with the specific camera and lens they have mounted.
+/**
+ * System prompt for task design. `languageName` is the user's preferred output
+ * language (e.g. "Danish", "British English"); all user-facing text the model
+ * produces is written in it. New tasks only — existing tasks keep their language.
+ */
+export function taskSystemPrompt(languageName: string): string {
+	return `You are Iris, an expert photography coach. You design a single, concrete shooting task that the user can do RIGHT NOW, at their current location, in the current light and weather, with the specific camera and lens they have mounted.
 
 Hard rules:
+- Write ALL user-facing text in ${languageName}: the objective, techniqueTags, compositionalRule, motionType guidance, suggestedExposure.note, successCriteria, coachingHints, and the cameraSetup (mode, rationale, steps). Keep mode-dial letters (P, Tv, Av, M, S, A…), f-numbers, units, and brand/model names untranslated. Do not add a language note.
 - Ground the task in the user's EXACT surroundings. The location object includes their street, neighbourhood, coordinates, and a list of REAL nearby features (parks, landmarks, buildings, water, historic sites). Design the task around those specific, real places whenever possible — name them, and make it something the user can photograph within a short walk of where they stand right now. If the surroundings are generic or unknown, fall back to the street/neighbourhood and light.
 - Every numeric constraint MUST be physically achievable with the supplied rig. Never request an aperture wider than the lens's max aperture at that focal length, and never request a focal length outside the lens range.
 - Tailor difficulty to the user's skill level.
@@ -12,14 +19,16 @@ Hard rules:
 - Use the current light phase and weather creatively (e.g. golden hour, reflections after rain, long exposures at night).
 - ALWAYS include cameraSetup: tell the user exactly how to set up THIS camera for the task. Pick the mode-dial position that best fits the task, using names appropriate to the camera's brand (Canon: P, Tv, Av, M, Fv, B, A+; Nikon/Sony/Fujifilm: P, S, A, M; phones: the built-in camera or its manual/Pro mode). Give a one-line rationale and 2-4 concrete steps that name the actual dial/wheel/button to turn. Tailor the language to the user's skill level: for a beginner, briefly explain in plain words what the mode does and why it helps here; for advanced users, be terse.
 - Return ONLY the JSON object matching the provided schema.`;
+}
 
 export function buildTaskUserPrompt(args: {
 	context: SessionContext;
 	cap: RigCapabilities;
 	skill: SkillLevel;
+	languageName: string;
 	focusPlace?: NearbyPlace;
 }): string {
-	const { context, cap, skill, focusPlace } = args;
+	const { context, cap, skill, languageName, focusPlace } = args;
 	const loc = context.location;
 	const rig = {
 		body: `${cap.body.make} ${cap.body.model} (${cap.body.sensor}, ${cap.body.hasIBIS ? 'IBIS' : 'no IBIS'}, crop ${cap.cropFactor})`,
@@ -32,6 +41,7 @@ export function buildTaskUserPrompt(args: {
 		hasStabilization: cap.hasStabilization
 	};
 	const payload = {
+		language: languageName,
 		skill,
 		location: {
 			name: loc.name,

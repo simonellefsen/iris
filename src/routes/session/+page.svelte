@@ -16,6 +16,7 @@
 	import { errorMessage } from '$lib/utils/result';
 	import { formatShutter } from '$lib/utils/focal';
 	import { mapsUrl, linkifyDestination } from '$lib/utils/maps';
+	import { difficultyLabel, motionLabel, t } from '$lib/i18n';
 	import { uid } from '$lib/utils/id';
 	import type { NearbyPlace } from '$lib/types/context';
 	import type { CoachingSession } from '$lib/types/session';
@@ -53,15 +54,16 @@
 		if (c.focalLengthTarget != null) {
 			items.push(
 				typeof c.focalLengthTarget === 'number'
-					? `Focal length ≈ ${c.focalLengthTarget}mm`
-					: `Focal length ${c.focalLengthTarget.min}–${c.focalLengthTarget.max}mm`
+					? t('constraint.focalExact', { n: c.focalLengthTarget })
+					: t('constraint.focalRange', { min: c.focalLengthTarget.min, max: c.focalLengthTarget.max })
 			);
 		}
-		if (c.apertureTarget != null) items.push(`Aperture f/${c.apertureTarget} or wider`);
-		if (c.isoMax != null) items.push(`ISO ≤ ${c.isoMax}`);
-		if (c.minShutterForHandheld) items.push(`Handhold at ≈ ${c.minShutterForHandheld} or faster`);
-		if (c.motionType) items.push(`Motion: ${c.motionType}`);
-		items.push(`Composition: ${c.compositionalRule}`);
+		if (c.apertureTarget != null) items.push(t('constraint.aperture', { n: c.apertureTarget }));
+		if (c.isoMax != null) items.push(t('constraint.iso', { n: c.isoMax }));
+		if (c.minShutterForHandheld)
+			items.push(t('constraint.handhold', { s: c.minShutterForHandheld }));
+		if (c.motionType) items.push(t('constraint.motion', { x: motionLabel(c.motionType) }));
+		items.push(t('constraint.composition', { rule: c.compositionalRule }));
 		return items;
 	}
 
@@ -71,11 +73,11 @@
 
 	async function start() {
 		if (!hasRig) {
-			session.error = 'Select a camera in Gear first.';
+			session.error = t('session.errorNoCamera');
 			return;
 		}
 		if (!hasKey) {
-			session.error = 'Add an API key in Setup first.';
+			session.error = t('session.errorNoKey');
 			return;
 		}
 		session.reset();
@@ -193,7 +195,7 @@
 	}
 </script>
 
-<h1 style="margin-bottom: 12px;">📷 Session</h1>
+<h1 style="margin-bottom: 12px;">{t('session.title')}</h1>
 
 {#if session.error}
 	<div class="error" style="margin-bottom: 12px;">{session.error}</div>
@@ -201,26 +203,26 @@
 
 {#if session.phase === 'idle'}
 	<div class="card">
-		<h3>Shooting with</h3>
+		<h3>{t('session.shootingWith')}</h3>
 		{#if activeBody}
 			<p>
 				<strong>{activeBody.make} {activeBody.model}</strong><br />
 				{#if activeLens}<span class="muted">{activeLens.make} {activeLens.model}</span>{/if}
 			</p>
 		{:else}
-			<p class="muted">No camera selected.</p>
+			<p class="muted">{t('session.noCamera')}</p>
 		{/if}
 		{#if !hasKey}
-			<div class="note">Add an API key in <a href="/settings">Setup</a> to begin.</div>
+			<div class="note">{t('session.addKeyNoteStart')} <a href="/settings">{t('nav.setup')}</a> {t('session.addKeyNoteEnd')}</div>
 		{/if}
 		<button class="btn btn-primary btn-block" onclick={start} disabled={!hasRig || !hasKey}>
-			Generate a task for right now
+			{t('session.generateTask')}
 		</button>
 	</div>
 {:else if session.phase === 'gathering'}
 	<div class="card row">
 		<span class="spinner"></span>
-		<span>Reading your location, light, and weather…</span>
+		<span>{t('session.gathering')}</span>
 	</div>
 {:else if session.task}
 	<!-- Context card -->
@@ -237,16 +239,19 @@
 					session.context.location.neighbourhood,
 					session.context.location.name,
 					session.context.location.country
-				].filter(Boolean).join(', ') || 'Unknown location'}
+				].filter(Boolean).join(', ') || t('common.unknownLocation')}
 			</p>
 			<div class="muted" style="font-size: 0.85rem;">
-				{session.context.weather.tempC}°C · {session.context.weather.cloudCoverPct}% cloud ·
-				{session.context.weather.windKph} km/h wind
+				{t('session.weatherSummary', {
+					temp: session.context.weather.tempC,
+					cloud: session.context.weather.cloudCoverPct,
+					wind: session.context.weather.windKph
+				})}
 			</div>
 			{#if (session.context.location.nearby ?? []).length}
 				<div style="margin-top: 10px;">
 					<div class="muted" style="font-size: 0.75rem; margin-bottom: 6px;">
-						Tap a place to design the task around it:
+						{t('session.tapPlace')}
 					</div>
 					<div class="chips">
 						{#each (session.context.location.nearby ?? []).slice(0, 8) as place (place.name)}
@@ -266,12 +271,12 @@
 	{#if session.phase === 'submitting' || session.phase === 'evaluating'}
 		<div class="card row">
 			<span class="spinner"></span>
-			<span>{session.phase === 'submitting' ? 'Preparing your photo…' : 'Critiquing your photo…'}</span>
+			<span>{session.phase === 'submitting' ? t('session.preparing') : t('session.critiquing')}</span>
 		</div>
 	{:else if rerolling}
 		<div class="card row">
 			<span class="spinner"></span>
-			<span>Designing a task around {selectedPlaceName}…</span>
+			<span>{t('session.designingAround', { name: selectedPlaceName ?? '' })}</span>
 		</div>
 	{:else}
 		{@const dest = session.task.destination}
@@ -279,7 +284,7 @@
 		<!-- Task card -->
 		<div class="card">
 			<div class="chips" style="margin-bottom: 10px;">
-				<span class="chip chip-diff {session.task.difficulty}">{session.task.difficulty}</span>
+				<span class="chip chip-diff {session.task.difficulty}">{difficultyLabel(session.task.difficulty)}</span>
 				{#each session.task.techniqueTags as tag}
 					<span class="chip chip-tag">{tag}</span>
 				{/each}
@@ -299,11 +304,11 @@
 			</h2>
 			{#if dest}
 				<a class="maps-link" href={mapsUrl(dest, loc)} target="_blank" rel="noopener">
-					🗺️ Open {dest.name} in Maps
+					{t('session.openInMaps', { name: dest.name })}
 				</a>
 			{/if}
 
-			<h3>Brief</h3>
+			<h3>{t('session.brief')}</h3>
 			<ul style="margin: 0; padding-left: 18px;">
 				{#each constraintList(session.task) as item}
 					<li>{item}</li>
@@ -311,7 +316,7 @@
 			</ul>
 
 			{#if session.task.cameraSetup}
-				<h3>On your camera</h3>
+				<h3>{t('session.onYourCamera')}</h3>
 				<div class="chips" style="margin-bottom: 6px;">
 					<span class="chip chip-tag">🎛️ {session.task.cameraSetup.mode}</span>
 				</div>
@@ -327,7 +332,7 @@
 				{/if}
 			{/if}
 
-			<h3>Suggested start</h3>
+			<h3>{t('session.suggestedStart')}</h3>
 			<div class="row" style="flex-wrap: wrap;">
 				<span class="pill">f/{session.task.suggestedExposure.aperture}</span>
 				<span class="pill">{session.task.suggestedExposure.shutter}</span>
@@ -338,7 +343,7 @@
 			{/if}
 
 			{#if session.task.successCriteria.length}
-				<h3>Success criteria</h3>
+				<h3>{t('session.successCriteria')}</h3>
 				<ul style="margin: 0; padding-left: 18px;">
 					{#each session.task.successCriteria as s}
 						<li>{s}</li>
@@ -347,7 +352,7 @@
 			{/if}
 
 			{#if session.task.coachingHints.length}
-				<h3>Coaching tips</h3>
+				<h3>{t('session.coachingTips')}</h3>
 				<ul style="margin: 0; padding-left: 18px; color: var(--muted);">
 					{#each session.task.coachingHints as h}
 						<li>{h}</li>
@@ -357,13 +362,13 @@
 
 			<div style="margin-top: 14px;">
 				<button class="btn btn-primary btn-block" onclick={() => submit('capture')}>
-					📸 Capture / submit
+					{t('session.captureSubmit')}
 				</button>
 				<button class="btn btn-ghost btn-block" style="margin-top: 8px;" onclick={() => submit('pick')}>
-					⬆️ Upload from camera roll
+					{t('session.uploadRoll')}
 				</button>
 				<button class="btn btn-ghost btn-block" style="margin-top: 8px;" onclick={start}>
-					↻ New task
+					{t('session.newTask')}
 				</button>
 			</div>
 		</div>
@@ -376,7 +381,7 @@
 		<div class="score-ring">
 			<div>
 				<div class="score-num" style="color: {scoreColor(ev.overallScore)};">{ev.overallScore}</div>
-				<div class="muted" style="font-size: 0.75rem;">out of 100</div>
+				<div class="muted" style="font-size: 0.75rem;">{t('session.outOf100')}</div>
 			</div>
 			<div style="flex: 1;">
 				{#each ev.dimensions as d (d.name)}
@@ -400,7 +405,7 @@
 
 	{#if ev.strengths.length}
 		<div class="card">
-			<h3>Strengths</h3>
+			<h3>{t('session.strengths')}</h3>
 			<ul style="margin: 0; padding-left: 18px;">
 				{#each ev.strengths as s}<li>{s}</li>{/each}
 			</ul>
@@ -408,7 +413,7 @@
 	{/if}
 	{#if ev.improvements.length}
 		<div class="card">
-			<h3>Try next time</h3>
+			<h3>{t('session.tryNext')}</h3>
 			<ul style="margin: 0; padding-left: 18px;">
 				{#each ev.improvements as s}<li>{s}</li>{/each}
 			</ul>
@@ -416,10 +421,10 @@
 	{/if}
 
 	<div class="card">
-		<h3>Detected from your photo</h3>
+		<h3>{t('session.detectedFromPhoto')}</h3>
 		<div class="muted" style="font-size: 0.88rem;">
 			{#if session.submission.exif.make}{session.submission.exif.make} {session.submission.exif.model}{/if}<br />
-			{#if session.submission.exif.lensModel}Lens: {session.submission.exif.lensModel}<br />{/if}
+			{#if session.submission.exif.lensModel}{t('session.lens')}: {session.submission.exif.lensModel}<br />{/if}
 			{#if session.submission.exif.focalLengthMm}{session.submission.exif.focalLengthMm}mm{/if}
 			{#if session.submission.exif.aperture} · f/{session.submission.exif.aperture}{/if}
 			{#if session.submission.exif.exposureTimeSec} · {formatShutter(session.submission.exif.exposureTimeSec)}{/if}
@@ -427,11 +432,11 @@
 		</div>
 		{#if session.submission.geoMismatchMeters != null && session.submission.geoMismatchMeters > 1000}
 			<div class="note" style="margin-top: 8px;">
-				Photo's GPS is {session.submission.geoMismatchMeters.toLocaleString()} m from your session location.
+				{t('session.geoMismatch', { m: session.submission.geoMismatchMeters.toLocaleString() })}
 			</div>
 		{/if}
 	</div>
 
-	<button class="btn btn-primary btn-block" onclick={start}>New task</button>
-	<a class="btn btn-ghost btn-block" href="/history" style="margin-top: 8px;">View history</a>
+	<button class="btn btn-primary btn-block" onclick={start}>{t('session.newTask')}</button>
+	<a class="btn btn-ghost btn-block" href="/history" style="margin-top: 8px;">{t('session.viewHistory')}</a>
 {/if}

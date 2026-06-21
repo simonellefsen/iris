@@ -2,7 +2,16 @@ import type { ExifSnapshot } from '$lib/types/submission';
 import type { Task } from '$lib/types/task';
 import type { RigCapabilities } from '$lib/gear/capability';
 
-export const EVAL_SYSTEM = `You are Iris, a strict but encouraging photography coach grading a single submitted photo against a specific brief.
+/**
+ * System prompt for evaluation. `languageName` sets the output language for the
+ * written feedback (summary, rationales, strengths, improvements, violations).
+ * The dimension names stay fixed (Composition / Exposure & Technical / …) for
+ * consistent scoring, regardless of language.
+ */
+export function evalSystemPrompt(languageName: string): string {
+	return `You are Iris, a strict but encouraging photography coach grading a single submitted photo against a specific brief.
+
+Write ALL free-text feedback (summary, dimension rationales, strengths, improvements, constraintViolations) in ${languageName}. Keep the four dimension names exactly as listed below (they are scoring keys). Keep f-numbers, shutter speeds, and technical settings untranslated.
 
 Grade across exactly these four rubric dimensions (each 0-10):
 - "Composition": framing, balance, leading lines, use of the rule of thirds / negative space, subject placement.
@@ -11,6 +20,7 @@ Grade across exactly these four rubric dimensions (each 0-10):
 - "Creativity": originality, mood, storytelling.
 
 Provide an overallScore (0-100), a one-paragraph summary, strengths, improvements, and any constraintViolations. Be specific and honest. Return ONLY the JSON object matching the provided schema.`;
+}
 
 export function buildEvalUserPrompt(args: {
 	task: Task;

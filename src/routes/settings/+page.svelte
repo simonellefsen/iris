@@ -3,6 +3,7 @@
 	import { defaultSettings, settings } from '$lib/stores/settings.svelte';
 	import { PROVIDER_LIST, PROVIDERS } from '$lib/llm/providers';
 	import { createProvider } from '$lib/llm/registry';
+	import { SUPPORTED_LOCALES, t } from '$lib/i18n';
 	import type { ProviderKey, Settings } from '$lib/types/settings';
 	import type { ValidationResult } from '$lib/llm/provider';
 
@@ -50,38 +51,45 @@
 	}
 </script>
 
-<h1 style="margin-bottom: 12px;">⚙️ Setup</h1>
+<h1 style="margin-bottom: 12px;">{t('setup.title')}</h1>
 
-<div class="note">
-	Bring your own key: Iris calls your LLM provider directly from the browser. Your API key is stored
-	only on this device (IndexedDB) and is sent only to the provider you choose.
-</div>
+<div class="note">{t('setup.byokNote')}</div>
 
 {#if draft}
 	<div class="card">
-		<label for="provider">LLM provider</label>
+		<label for="language">{t('setup.language')}</label>
+		<select id="language" bind:value={draft.locale}>
+			{#each SUPPORTED_LOCALES as loc (loc.id)}
+				<option value={loc.id}>{loc.label} ({loc.english})</option>
+			{/each}
+		</select>
+		<p class="muted" style="font-size: 0.8rem;">{t('setup.languageHint')}</p>
+	</div>
+
+	<div class="card">
+		<label for="provider">{t('setup.provider')}</label>
 		<select id="provider" bind:value={draft.activeProvider}>
 			{#each PROVIDER_LIST as p (p.key)}
-				<option value={p.key}>{p.label} {p.supportsVision ? '' : '(no vision)'}</option>
+				<option value={p.key}>{p.label} {p.supportsVision ? '' : t('setup.noVision')}</option>
 			{/each}
 		</select>
 
-		<label for="key">API key</label>
+		<label for="key">{t('setup.apiKey')}</label>
 		<input
 			id="key"
 			type="password"
-			placeholder="sk-… / your provider key"
+			placeholder={t('setup.apiKeyPlaceholder')}
 			bind:value={draft.providers[activeKey].apiKey}
 		/>
 		<div class="row" style="margin-top: 8px;">
-			<button class="btn btn-ghost" onclick={validate}>Test key</button>
+			<button class="btn btn-ghost" onclick={validate}>{t('setup.testKey')}</button>
 			<a href={PROVIDERS[activeKey].helpURL} target="_blank" rel="noopener" class="muted" style="font-size: 0.85rem;">
-				Get a {PROVIDERS[activeKey].label} key ↗
+				{t('setup.getKey', { provider: PROVIDERS[activeKey].label })}
 			</a>
 			<div class="spacer"></div>
 			{#if results[activeKey]}
 				<span class="badge {results[activeKey].ok ? 'badge-good' : 'badge-bad'}">
-					{results[activeKey].ok ? 'Valid' : 'Failed'}
+					{results[activeKey].ok ? t('setup.valid') : t('setup.failed')}
 				</span>
 			{/if}
 		</div>
@@ -89,22 +97,22 @@
 			<div class="error" style="margin-top: 8px;">{results[activeKey].error}</div>
 		{/if}
 
-		<label for="textmodel">Text model (task design)</label>
+		<label for="textmodel">{t('setup.textModel')}</label>
 		<input id="textmodel" bind:value={draft.providers[activeKey].textModel} />
 
-		<label for="visionmodel">Vision model (evaluation)</label>
+		<label for="visionmodel">{t('setup.visionModel')}</label>
 		<input id="visionmodel" bind:value={draft.providers[activeKey].visionModel} />
 		<p class="muted" style="font-size: 0.8rem;">
-			Vision quality: {PROVIDERS[activeKey].visionQuality}. Edit the model ids to use newer releases.
+			{t('setup.visionQuality', { q: PROVIDERS[activeKey].visionQuality })}
 		</p>
 	</div>
 
 	<div class="card">
-		<label for="skill">Your skill level</label>
+		<label for="skill">{t('setup.skill')}</label>
 		<select id="skill" bind:value={draft.skillLevel}>
-			<option value="beginner">Beginner</option>
-			<option value="intermediate">Intermediate</option>
-			<option value="advanced">Advanced</option>
+			<option value="beginner">{t('difficulty.beginner')}</option>
+			<option value="intermediate">{t('difficulty.intermediate')}</option>
+			<option value="advanced">{t('difficulty.advanced')}</option>
 		</select>
 		<label class="row" style="margin-top: 12px; align-items: center;">
 			<input
@@ -112,16 +120,16 @@
 				bind:checked={draft.llmAugmentGear}
 				style="width: auto;"
 			/>
-			Let the LLM fill specs for gear not in the catalog
+			{t('setup.augmentGear')}
 		</label>
 	</div>
 
 	<button class="btn btn-primary btn-block" onclick={save} disabled={saving}>
-		{saving ? 'Saving…' : 'Save settings'}
+		{saving ? t('setup.saving') : t('setup.save')}
 	</button>
 {:else if loadError}
-	<div class="error">{loadError} — showing defaults.</div>
-	<button class="btn btn-primary btn-block" onclick={() => settings.load()}>Retry</button>
+	<div class="error">{loadError} {t('setup.loadErrorSuffix')}</div>
+	<button class="btn btn-primary btn-block" onclick={() => settings.load()}>{t('common.retry')}</button>
 {:else}
-	<p class="muted">Loading…</p>
+	<p class="muted">{t('common.loading')}</p>
 {/if}

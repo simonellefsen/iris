@@ -5,13 +5,14 @@ import { gatherContext } from '$lib/context';
 import { enforceFeasibility, resolveRig, rigCapabilities } from '$lib/gear/capability';
 import { getBody, getLens } from '$lib/gear/catalog';
 import { settings } from '$lib/stores/settings.svelte';
+import { localeMeta, uiKeyFor } from '$lib/i18n/locales';
 import type { NearbyPlace, SessionContext } from '$lib/types/context';
 import type { ActiveRig } from '$lib/types/gear';
 import type { Task, TaskDestination } from '$lib/types/task';
 import { errorMessage, err, ok, type Result } from '$lib/utils/result';
 import { findMentionedPlace } from '$lib/utils/maps';
 import { uid } from '$lib/utils/id';
-import { TASK_SYSTEM, buildTaskUserPrompt } from './prompts/taskSystem';
+import { taskSystemPrompt, buildTaskUserPrompt } from './prompts/taskSystem';
 import { taskOutputSchema } from './schemas';
 
 export interface GenerateTaskOptions {
@@ -30,10 +31,14 @@ export async function generateTask(
 	rig: ActiveRig,
 	opts: GenerateTaskOptions = {}
 ): Promise<Result<Task, string>> {
+	const locale = settings.current.locale;
+	const ui = uiKeyFor(locale);
+	const languageName = localeMeta(locale).languageName;
+
 	let context = opts.context;
 	if (!context) {
 		try {
-			context = await gatherContext();
+			context = await gatherContext(new Date(), ui);
 		} catch (e) {
 			return err(`Could not determine your location: ${errorMessage(e)}`);
 		}
@@ -51,13 +56,14 @@ export async function generateTask(
 	const cap = rigCapabilities(body, lens);
 
 	const messages: ChatMessage[] = [
-		{ role: 'system', content: TASK_SYSTEM },
+		{ role: 'system', content: taskSystemPrompt(languageName) },
 		{
 			role: 'user',
 			content: buildTaskUserPrompt({
 				context,
 				cap,
 				skill: settings.current.skillLevel,
+				languageName,
 				focusPlace: opts.focusPlace
 			})
 		}

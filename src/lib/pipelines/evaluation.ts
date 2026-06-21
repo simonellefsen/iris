@@ -5,12 +5,13 @@ import type { DownscaledImage } from '$lib/media/downscale';
 import { resolveRig, rigCapabilities } from '$lib/gear/capability';
 import { getBody, getLens } from '$lib/gear/catalog';
 import { settings } from '$lib/stores/settings.svelte';
+import { localeMeta } from '$lib/i18n/locales';
 import type { Evaluation } from '$lib/types/evaluation';
 import type { ExifSnapshot } from '$lib/types/submission';
 import type { Task } from '$lib/types/task';
 import { errorMessage, err, ok, type Result } from '$lib/utils/result';
 import { uid } from '$lib/utils/id';
-import { EVAL_SYSTEM, buildEvalUserPrompt } from './prompts/evalSystem';
+import { evalSystemPrompt, buildEvalUserPrompt } from './prompts/evalSystem';
 import { evaluationOutputSchema } from './schemas';
 
 export interface EvaluateInput {
@@ -36,9 +37,10 @@ export async function evaluateSubmission(input: EvaluateInput): Promise<Result<E
 
 	const { body, lens } = await resolveRig(input.task.rig, getBody, getLens);
 	const cap = rigCapabilities(body, lens);
+	const languageName = localeMeta(settings.current.locale).languageName;
 
 	const messages: ChatMessage[] = [
-		{ role: 'system', content: EVAL_SYSTEM },
+		{ role: 'system', content: evalSystemPrompt(languageName) },
 		{
 			role: 'user',
 			content: [

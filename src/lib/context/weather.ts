@@ -1,39 +1,10 @@
 import type { WeatherContext } from '$lib/types/context';
+import { weatherText } from '$lib/i18n/messages';
+import type { UiKey } from '$lib/i18n/locales';
 
-/** Map a WMO weather code (Open-Meteo `weather_code`) to a short text description. */
-export function weatherCodeToText(code: number | undefined | null): string {
-	if (code == null) return 'Unknown';
-	const map: Record<number, string> = {
-		0: 'Clear',
-		1: 'Mainly clear',
-		2: 'Partly cloudy',
-		3: 'Overcast',
-		45: 'Fog',
-		48: 'Rime fog',
-		51: 'Light drizzle',
-		53: 'Drizzle',
-		55: 'Heavy drizzle',
-		56: 'Freezing drizzle',
-		57: 'Freezing drizzle',
-		61: 'Light rain',
-		63: 'Rain',
-		65: 'Heavy rain',
-		66: 'Freezing rain',
-		67: 'Freezing rain',
-		71: 'Light snow',
-		73: 'Snow',
-		75: 'Heavy snow',
-		77: 'Snow grains',
-		80: 'Light showers',
-		81: 'Showers',
-		82: 'Violent showers',
-		85: 'Snow showers',
-		86: 'Snow showers',
-		95: 'Thunderstorm',
-		96: 'Thunderstorm + hail',
-		99: 'Thunderstorm + hail'
-	};
-	return map[code] ?? 'Unknown';
+/** Map a WMO weather code (Open-Meteo `weather_code`) to a short localized description. */
+export function weatherCodeToText(code: number | undefined | null, ui: UiKey = 'en'): string {
+	return weatherText(code, ui);
 }
 
 const DEBUG_FIXTURES: Record<string, WeatherContext> = {
@@ -43,12 +14,19 @@ const DEBUG_FIXTURES: Record<string, WeatherContext> = {
 	night: { tempC: 6, cloudCoverPct: 5, precipitationMm: 0, windKph: 4, uvIndex: 0, conditions: 'Clear' }
 };
 
-export function unknownWeather(): WeatherContext {
-	return { tempC: 0, cloudCoverPct: 0, precipitationMm: 0, windKph: 0, uvIndex: 0, conditions: 'Unknown' };
+export function unknownWeather(ui: UiKey = 'en'): WeatherContext {
+	return {
+		tempC: 0,
+		cloudCoverPct: 0,
+		precipitationMm: 0,
+		windKph: 0,
+		uvIndex: 0,
+		conditions: weatherText(undefined, ui)
+	};
 }
 
 /** Fetch current weather from Open-Meteo (free, keyless, CORS-friendly). */
-export async function getWeather(lat: number, lon: number): Promise<WeatherContext> {
+export async function getWeather(lat: number, lon: number, ui: UiKey = 'en'): Promise<WeatherContext> {
 	if (typeof window !== 'undefined') {
 		const m = /(?:[?&]debugWeather=)([a-z]+)/i.exec(window.location.search);
 		if (m && DEBUG_FIXTURES[m[1].toLowerCase()]) return DEBUG_FIXTURES[m[1].toLowerCase()];
@@ -79,6 +57,6 @@ export async function getWeather(lat: number, lon: number): Promise<WeatherConte
 		precipitationMm: c.precipitation ?? 0,
 		windKph: c.wind_speed_10m ?? 0,
 		uvIndex: c.uv_index ?? 0,
-		conditions: weatherCodeToText(c.weather_code)
+		conditions: weatherCodeToText(c.weather_code, ui)
 	};
 }

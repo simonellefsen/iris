@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { db, SETTINGS_KEY, type SettingsRecord } from '$lib/db/schema';
 import { PROVIDER_LIST } from '$lib/llm/providers';
+import { DEFAULT_LOCALE } from '$lib/i18n/locales';
 import type { ProviderConfig, Settings } from '$lib/types/settings';
 
 export function defaultSettings(): Settings {
@@ -10,6 +11,7 @@ export function defaultSettings(): Settings {
 		units: 'metric',
 		llmAugmentGear: true,
 		activeRig: { bodyId: 'body_canon_eos_r8', lensId: 'lens_canon_rf_50_1.8' },
+		locale: DEFAULT_LOCALE,
 		providers: Object.fromEntries(
 			PROVIDER_LIST.map((p) => [
 				p.key,
@@ -27,6 +29,8 @@ export function defaultSettings(): Settings {
 class SettingsStore {
 	current = $state<Settings>(defaultSettings());
 	loaded = $state(false);
+	/** True once a settings record was found in IndexedDB (i.e. not a first run). */
+	persisted = $state(false);
 
 	/** Load persisted settings from IndexedDB; safe to call repeatedly. */
 	async load() {
@@ -36,6 +40,7 @@ class SettingsStore {
 			const { id: _id, ...rest } = rec as SettingsRecord;
 			// Merge over defaults so new fields are filled in across versions.
 			this.current = { ...defaultSettings(), ...rest };
+			this.persisted = true;
 		}
 		this.loaded = true;
 		// Ask for persistent storage where the browser honors it (desktop/Android; no-op on iOS).

@@ -1,4 +1,5 @@
 import type { ActiveRig } from './gear';
+import type { LocaleId } from '$lib/i18n/locales';
 
 export type ProviderKey = 'openrouter' | 'openai' | 'anthropic' | 'gemini' | 'grok';
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
@@ -18,4 +19,5 @@ export interface Settings {
 	units: Units;
 	llmAugmentGear: boolean; // allow the LLM to fill specs for unknown gear
 	activeRig: ActiveRig | null; // the body + lens selected for the next session
+	locale: LocaleId; // UI + LLM output language (new sessions/tasks use this)
 }

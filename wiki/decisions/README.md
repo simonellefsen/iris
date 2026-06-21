@@ -6,6 +6,7 @@ revisit**" constraints — change them only with a new dated decision that super
 
 | Date | Decision |
 |------|----------|
+| 2026-06-21 | [Multilingual UI + LLM output (English, Danish)](2026-06-21-multilingual-ui-and-tasks.md) |
 | 2026-06-20 | [Pure client-side PWA, no backend](2026-06-20-client-side-pwa-no-backend.md) |
 | 2026-06-20 | [BYOK, multi-provider LLM behind one abstraction](2026-06-20-byok-multi-provider-llm.md) |
 | 2026-06-20 | [OpenRouter is the Phase-1 default provider](2026-06-20-openrouter-phase-1-default.md) |

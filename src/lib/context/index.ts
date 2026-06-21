@@ -1,4 +1,5 @@
 import type { LocationContext, NearbyPlace, SessionContext, WeatherContext } from '$lib/types/context';
+import type { UiKey } from '$lib/i18n/locales';
 import { reverseGeocode } from './geocode';
 import { getNearbyPlaces } from './places';
 import { getPosition } from './location';
@@ -14,17 +15,20 @@ export * from './places';
 /**
  * Gather the full session context (location + weather + light). Location is required;
  * weather, geocoding, and nearby-places degrade gracefully if the network is unavailable.
+ *
+ * `ui` localizes the weather conditions and light-phase labels for NEW sessions
+ * (existing sessions keep whatever language they were gathered in).
  */
-export async function gatherContext(date = new Date()): Promise<SessionContext> {
+export async function gatherContext(date = new Date(), ui: UiKey = 'en'): Promise<SessionContext> {
 	const coords = await getPosition();
 	const [geo, weather, nearby] = await Promise.all([
 		reverseGeocode(coords.lat, coords.lon).catch(
 			(): { name?: string; country?: string; street?: string; neighbourhood?: string } => ({})
 		),
-		getWeather(coords.lat, coords.lon).catch(() => undefined),
+		getWeather(coords.lat, coords.lon, ui).catch(() => undefined),
 		getNearbyPlaces(coords.lat, coords.lon).catch(() => [] as NearbyPlace[])
 	]);
-	const light = getLight(date, coords.lat, coords.lon);
+	const light = getLight(date, coords.lat, coords.lon, ui);
 
 	const location: LocationContext = {
 		lat: coords.lat,
@@ -36,7 +40,7 @@ export async function gatherContext(date = new Date()): Promise<SessionContext> 
 		neighbourhood: geo.neighbourhood,
 		nearby
 	};
-	const w: WeatherContext = weather ?? unknownWeather();
+	const w: WeatherContext = weather ?? unknownWeather(ui);
 
 	return { location, weather: w, light };
 }

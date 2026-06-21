@@ -21,6 +21,13 @@ export const taskOutputSchema = z.object({
 		iso: z.number(),
 		note: z.string().optional()
 	}),
+	cameraSetup: z
+		.object({
+			mode: z.string(),
+			rationale: z.string(),
+			steps: z.array(z.string())
+		})
+		.optional(),
 	successCriteria: z.array(z.string()).min(1),
 	coachingHints: z.array(z.string())
 });

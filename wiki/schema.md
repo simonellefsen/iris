@@ -49,9 +49,16 @@ Full TypeScript lives in [src/lib/types/](../src/lib/types/). Sketches:
 ### Task ([types/task.ts](../src/lib/types/task.ts))
 `objective, techniqueTags, constraints (focalLengthTarget, apertureTarget, minShutterForHandheld,
 isoMax, motionType, compositionalRule), suggestedExposure {aperture, shutter, iso, note},
-successCriteria[], coachingHints[], difficulty`, plus an embedded `context` and `rig`. The LLM
-output is validated by `taskOutputSchema` ([pipelines/schemas.ts](../src/lib/pipelines/schemas.ts));
-the client fills `id`/`createdAt`/`context`/`rig`.
+successCriteria[], coachingHints[], difficulty`, plus:
+- `cameraSetup?: { mode, rationale, steps[] }` — beginner-friendly "how to set up your camera"
+  (which mode-dial position — Av/Tv/M/Fv/P… brand-appropriate — and concrete steps).
+- `destination?: { name, lat?, lon? }` — a real place the task sends you to, used for the
+  "open in maps" action (see [utils/maps.ts](../src/lib/utils/maps.ts)).
+- embedded `context` and `rig`.
+
+The LLM output is validated by `taskOutputSchema`
+([pipelines/schemas.ts](../src/lib/pipelines/schemas.ts)); the client fills
+`id`/`createdAt`/`context`/`rig`/`destination`.
 
 ### Context ([types/context.ts](../src/lib/types/context.ts))
 - **LocationContext** — `lat/lon/accuracyM, name, country, street, neighbourhood, nearby[]`.
@@ -80,6 +87,19 @@ Ties `rig + context + task + submission + evaluation` together for the history v
 `providers: Record<ProviderKey, ProviderConfig>` (`apiKey, textModel, visionModel`),
 `activeProvider, skillLevel, units, llmAugmentGear`. `ProviderKey` ∈
 `openrouter | openai | anthropic | gemini | grok`. Stored as a single row with `id = 'app'`.
+
+## Client-side persistence (localStorage)
+
+Two small things live in `localStorage`, separate from the IndexedDB tables above:
+- `iris-active-session` — the in-progress coaching session (task + context + submission +
+  evaluation, no blobs) so a reload/app-reopen resumes the brief instead of losing it. Written via
+  `$state.snapshot` (proxies can't be cloned). Managed by the session store
+  ([stores/session.svelte.ts](../src/lib/stores/session.svelte.ts)); cleared on `reset()`.
+
+> **Persisting Svelte `$state` requires a snapshot.** IndexedDB's structured clone and
+> `JSON.stringify` both throw `DataCloneError` on a reactive proxy. Always `$state.snapshot()` (or
+> deep-copy) before a `db().put()` or `localStorage.setItem()`. This caused the eval-save crash
+> fixed 2026-06-21.
 
 ## Invariants & rules
 

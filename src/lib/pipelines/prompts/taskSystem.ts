@@ -10,6 +10,7 @@ Hard rules:
 - Tailor difficulty to the user's skill level.
 - Make the task specific and actionable: a clear objective, concrete constraints, a suggested exposure starting point, measurable success criteria, and 2-4 coaching hints.
 - Use the current light phase and weather creatively (e.g. golden hour, reflections after rain, long exposures at night).
+- ALWAYS include cameraSetup: tell the user exactly how to set up THIS camera for the task. Pick the mode-dial position that best fits the task, using names appropriate to the camera's brand (Canon: P, Tv, Av, M, Fv, B, A+; Nikon/Sony/Fujifilm: P, S, A, M; phones: the built-in camera or its manual/Pro mode). Give a one-line rationale and 2-4 concrete steps that name the actual dial/wheel/button to turn. Tailor the language to the user's skill level: for a beginner, briefly explain in plain words what the mode does and why it helps here; for advanced users, be terse.
 - Return ONLY the JSON object matching the provided schema.`;
 
 export function buildTaskUserPrompt(args: {

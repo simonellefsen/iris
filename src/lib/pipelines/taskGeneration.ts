@@ -113,6 +113,7 @@ export async function generateTask(
 		successCriteria: output.successCriteria,
 		coachingHints: output.coachingHints,
 		difficulty: output.difficulty,
+		cameraSetup: output.cameraSetup,
 		context,
 		rig,
 		destination

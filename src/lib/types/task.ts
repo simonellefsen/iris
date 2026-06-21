@@ -11,6 +11,13 @@ export interface ExposureSuggestion {
 	note?: string; // "handheld: keep >= 1/(focal-equivalent)"
 }
 
+/** Beginner-friendly "how to set up your camera for this task" guidance. */
+export interface CameraSetup {
+	mode: string; // mode-dial position, brand-appropriate: "Av — Aperture priority", "M — Manual"…
+	rationale: string; // why this mode suits the task, in plain language
+	steps: string[]; // concrete dial/button actions to dial it in
+}
+
 export interface TaskConstraint {
 	focalLengthTarget?: number | { min: number; max: number };
 	apertureTarget?: number; // require shooting at <= this f-number
@@ -30,6 +37,7 @@ export interface Task {
 	successCriteria: string[];
 	coachingHints: string[];
 	difficulty: Difficulty;
+	cameraSetup?: CameraSetup; // how to configure the camera (esp. for beginners)
 	context: SessionContext;
 	rig: ActiveRig;
 	/** A real place the task sends the user to, for an "open in maps" action. */

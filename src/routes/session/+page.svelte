@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { session } from '$lib/stores/session.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 	import { generateTask } from '$lib/pipelines/taskGeneration';
@@ -35,6 +36,16 @@
 	// Which nearby place the current task is focused on, and whether we're re-rolling for it.
 	let selectedPlaceName = $state<string | null>(null);
 	let rerolling = $state(false);
+
+	// Resume an in-progress session after a reload; only when nothing is loaded yet
+	// (the store is a singleton, so client-side nav keeps state without a restore).
+	onMount(() => {
+		if (session.phase === 'idle') session.restore();
+	});
+	// Persist on every meaningful change (save() reads the reactive fields, so this re-runs).
+	$effect(() => {
+		session.save();
+	});
 
 	function constraintList(task: Task): string[] {
 		const c = task.constraints;
@@ -110,19 +121,35 @@
 		session.phase = 'submitting';
 		session.error = null;
 		try {
+			// Snapshot the reactive task to a plain object: IndexedDB's structured clone
+			// throws DataCloneError on Svelte $state proxies.
+			const task = $state.snapshot(session.task) as Task;
 			const file = outcome.file;
 			const exif = await parseExif(file);
+
+			// We can't read the phone model from the browser, but an in-app capture's EXIF
+			// is the real device — use it to correct the phone body (e.g. "iPhone 15 Pro" → "17 Pro").
+			if (source === 'capture' && activeBody?.isPhone && exif.make && exif.model) {
+				const detected = `${exif.make} ${exif.model}`.trim();
+				if (detected.toLowerCase() !== `${activeBody.make} ${activeBody.model}`.trim().toLowerCase()) {
+					await db().bodies.update(activeBody.id, {
+						make: exif.make,
+						model: exif.model,
+						source: 'user'
+					});
+				}
+			}
+
 			const photo = await downscaleToJpeg(file);
 			const thumbnail = await makeThumbnailDataUrl(file);
 			const photoKey = await putPhoto(photo.blob);
 			const submissionId = uid('sub');
-			const geoMismatchMeters =
-				exif.gps && session.context
-					? Math.round(distanceMeters(exif.gps, session.context.location))
-					: undefined;
+			const geoMismatchMeters = exif.gps
+				? Math.round(distanceMeters(exif.gps, task.context.location))
+				: undefined;
 			const submission: Submission = {
 				id: submissionId,
-				taskId: session.task.id,
+				taskId: task.id,
 				createdAt: Date.now(),
 				photoBlobKey: photoKey,
 				thumbnailDataUrl: thumbnail,
@@ -134,7 +161,7 @@
 			session.submission = submission;
 			session.phase = 'evaluating';
 			const res = await evaluateSubmission({
-				task: session.task,
+				task,
 				photo,
 				exif,
 				submissionId
@@ -145,14 +172,14 @@
 				return;
 			}
 			await db().evaluations.put(res.value);
-			await db().tasks.put(session.task);
+			await db().tasks.put(task);
 			const coaching: CoachingSession = {
 				id: uid('sess'),
-				startedAt: session.task.createdAt,
+				startedAt: task.createdAt,
 				endedAt: Date.now(),
-				rig: session.task.rig,
-				context: session.task.context,
-				taskId: session.task.id,
+				rig: task.rig,
+				context: task.context,
+				taskId: task.id,
 				submissionId: submission.id,
 				evaluationId: res.value.id
 			};
@@ -282,6 +309,23 @@
 					<li>{item}</li>
 				{/each}
 			</ul>
+
+			{#if session.task.cameraSetup}
+				<h3>On your camera</h3>
+				<div class="chips" style="margin-bottom: 6px;">
+					<span class="chip chip-tag">🎛️ {session.task.cameraSetup.mode}</span>
+				</div>
+				<p class="muted" style="font-size: 0.85rem; margin: 0 0 6px;">
+					{session.task.cameraSetup.rationale}
+				</p>
+				{#if session.task.cameraSetup.steps.length}
+					<ol style="margin: 0; padding-left: 18px;">
+						{#each session.task.cameraSetup.steps as step}
+							<li>{step}</li>
+						{/each}
+					</ol>
+				{/if}
+			{/if}
 
 			<h3>Suggested start</h3>
 			<div class="row" style="flex-wrap: wrap;">

@@ -5,6 +5,28 @@ the top. Use absolute dates.
 
 ---
 
+## 2026-06-21 — Eval crash fix + session persistence, camera guidance, phone self-heal
+
+Field-test feedback round.
+
+- **Fixed the evaluation crash** (`DataCloneError: The object can not be cloned`). `submit()` was
+  passing the Svelte `$state` task proxy straight to `db().tasks.put()` / `sessions.put()`;
+  IndexedDB's structured clone rejects proxies. Now snapshots with `$state.snapshot()` first (same
+  pattern the settings store already documented). See [schema.md](schema.md#client-side-persistence-localstorage).
+- **Active session is remembered** across reload/app-reopen via `localStorage` (`iris-active-session`),
+  managed by the session store (`save()`/`restore()`, snapshot-based). The page restores on mount
+  and saves via an `$effect`. (In-app navigation already survived — the store is a singleton.)
+- **Beginner camera guidance.** New optional `Task.cameraSetup { mode, rationale, steps[] }` — the
+  coach now says which mode-dial position to use (Av/Tv/M/Fv/P…, brand-appropriate) and how to dial
+  it in. Schema + prompt + a new "On your camera" section in the task card.
+- **Phone model self-heals from EXIF.** Browsers can't read the phone model, but an in-app capture's
+  EXIF is the real device, so on capture we update an `isPhone` body's make/model (e.g. seeded
+  "iPhone 15 Pro" → "iPhone 17 Pro"). File uploads don't trigger this (could be any camera).
+
+Not done (needs product input): launching an external camera app (Pi/Adobe Indigo) — a PWA can't
+detect installed apps, and a photo shot in another app can't return to us automatically; the only
+feasible path is a user-configured deep-link button + manual re-upload.
+
 ## 2026-06-21 — Session UX: selectable Nearby, map links, badge fix
 
 - **Badge rework.** Technique tags + difficulty were in a non-wrapping flex `.row`, so flexbox
